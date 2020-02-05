@@ -1,64 +1,60 @@
 module ObservationDims
 
-# These traits say how the given function wants to get its observations.
-# trait function is `obs_arrangement`
-abstract type ObsArrangement end
+using NamedDims
+using AxisArrays
+using Distributions
 
-# Note for implementors: with these traits
-# if the input to your function is a mix of ArraySlicesOfObs
-# and IteratorOfObs for 1D,
-# e.g. a matrix with columns as obs and some vector
-# then you sould declare it as
-# `obs_arrangement(:typeof(mymetric)) = MatrixColsOfObs()`
-# (or MatrixRowsOfObs, if that case, etc)
-# as the `ArraySlicesOfObs` will not rearrange any 1D inputs
+export obs_arrangement, organise_obs
+export SingleObs, IteratorOfObs, ArraySlicesofObs
+export MatrixRowsOfObs, MatrixColsOfObs
+
+"""
+    type ObsArrangement
+
+Defines the orientation of data that is expected by a function
+"""
+abstract type ObsArrangement end
 
 struct SingleObs <: ObsArrangement end
 struct IteratorOfObs <: ObsArrangement end
 struct ArraySlicesOfObs{D} <: ObsArrangement end
+
 const MatrixRowsOfObs = ArraySlicesOfObs{1}
 const MatrixColsOfObs = ArraySlicesOfObs{2}
 
 
+"""
+    organise_obs(f, data; obsdim=nothing)
 
-# TODO: Consider adding `VectorOfObs`, which is like `collect` + `IteratorOfObs`
-# this would let things that are type-constrained to `AbstractVector` work.
-# At the cost of matrializing all the generators that slice up matrixes
-
-## pre-trait
-# trait re-dispatch
-function organise_obs(metric, data; obsdim=nothing)
-    return organise_obs(obs_arrangement(metric), data; obsdim=obsdim)
+Organise the `data` according to the `ObsArrangement` expected by some function `f`.
+"""
+function organise_obs(f, data; obsdim=nothing)
+    return organise_obs(obs_arrangement(f), data; obsdim=obsdim)
 end
 
 
-# These are basically scalar quantities and don't (generally) represent observations
-# at all. e.g. threshold parameters.
-# For these types of data, it doesn't mater what the metric is
-# we will never rearrange them.
-# so we don't even need to check the traits.
+# Specify arrangement based on type of data:
+
+# Scalars have no "orientation" so no rearrangement required
 for T in (Sampleable, Number, Symbol)
-    @eval organise_obs(metric, data::$T; obsdim=nothing) = data
+    @eval organise_obs(f, data::$T; obsdim=nothing) = data
+    @eval organise_obs(::SingleObs, data::$T; obsdim=nothing) = data
 end
 
-## Two arg forms: obsdim is optional, we may or may not need it.
-
+## Vectors: obsdim is optional, we may or may not need it.
 for T in (Any, AbstractVector)
-    # Need a iterator and it aleady is an iterator so no need ot change
+
+    # Iterator -> IteratorOfObs
     @eval organise_obs(::IteratorOfObs, obs_iter::$T; obsdim=nothing) = obs_iter
 
-    # It is an iterator of observations and we need to arrange it into an Array (e.g. Matrix)
-    @eval function organise_obs(
-        ::ArraySlicesOfObs{D},
-        obs_iter::$T;
-        obsdim=nothing
-    ) where D
+    # Iterator -> ArraySlicesOfObs
+    @eval function organise_obs(::ArraySlicesOfObs{D}, obs_iter::$T; obsdim=nothing) where D
+
         # we assume all obs have same number of dimensions else nothing makes sense
         ndims_per_obs = ndims(first(obs_iter))
 
-        if ndims_per_obs == 0  # it is a collection of scalars!
-            # TODO: idk if this is best behavour, but it is useful for our likelyhoods
-            # for the univariate case
+        # If collection of scalars then return the collection
+        if ndims_per_obs == 0
             return collect(obs_iter)
         end
 
@@ -81,40 +77,40 @@ for T in (Any, AbstractVector)
     end
 end
 
-# If it is a single observation than never any need to rearrage
+# Specify arrangement based on desired ObsArrangement:
+
+# Any -> SingleObs: never any need to rearrage
 organise_obs(::SingleObs, data; obsdim=nothing) = data
 
 # If data is an array we can safely drop single length dimensions
 # This lets us compute metrics on pairs of objects that are (3,) and (3, 1)
 function organise_obs(::SingleObs, data::AbstractArray; obsdim=nothing)
     to_drop = findall(size(data) .== 1)
-    data = isempty(to_drop) ? data : dropdims(data; dims=(to_drop...))
+    data = isempty(to_drop) ? data : dropdims(data; dims=Tuple(to_drop))
     return data
 end
 
-for A in (IteratorOfObs, ArraySlicesOfObs)
-    # Handle non-1D AbstractArray data, this means we need to know the obsdim
-    # This method fills in the obsdim, if required, to the default
-    # then redispatches to the 3 arg form below.
-    # Filling in the observation dimension is the same regardless of if targetting
-    # IteratorOfObs, ArraySlicesOfObs
-    @eval function organise_obs(arrangement::$A, data::AbstractArray; obsdim=nothing)
-        if obsdim == nothing
-            obsdim = _default_obsdim(data)
-        end
-        if data isa NamedDimsArray && obsdim isa Symbol
-            obsdim = NamedDims.dim(data, obsdim)
-        end
-        if data isa AxisArray && obsdim isa Symbol
-            obsdim = axisdim(data, Axis{obsdim})
-        end
 
+# Array -> IteratorOfObs or ArraySlicesOfObs: depends on obsdim
+# Resorts to default obsdim which redispatches to the 3 arg form below.
+for A in (IteratorOfObs, ArraySlicesOfObs)
+
+    @eval function organise_obs(arrangement::$A, data::AbstractArray; obsdim=_default_obsdim(data))
+        return organise_obs(arrangement, data, obsdim)
+    end
+
+    @eval function organise_obs(arrangement::$A, data::NamedDimsArray; obsdim=_default_obsdim(data))
+        obsdim = (obsdim isa Symbol) ? NamedDims.dim(data, obsdim) : obsdim
+        return organise_obs(arrangement, data, obsdim)
+    end
+
+    @eval function organise_obs(arrangement::$A, data::AxisArray; obsdim=_default_obsdim(data))
+        obsdim = (obsdim isa Symbol) ? axisdim(data, Axis{obsdim}) : obsdim
         return organise_obs(arrangement, data, obsdim)
     end
 end
 
-## 3 arg forms: we know the obsdim we need and our current form may not agree
-## These are only needed for (non 1D) arrays
+# 3 arg forms rearrange (non 1D) arrays according to the obsdim
 
 # Slice up the array to get an iterator of observations
 function organise_obs(::IteratorOfObs, data::AbstractArray, obsdim::Integer)
@@ -122,16 +118,15 @@ function organise_obs(::IteratorOfObs, data::AbstractArray, obsdim::Integer)
     return (selectdim(data, obsdim, ii) for ii in Base.axes(data, obsdim))
 end
 
-# Permute the array so the observations are on the right dimension
+# Permute the array so the observations are arranged correctly
 function organise_obs(
-    ::ArraySlicesOfObs{D},
-    data::AbstractArray{<:Any, N},
-    obsdim::Integer
+    ::ArraySlicesOfObs{D}, data::AbstractArray{<:Any, N}, obsdim::Integer
 ) where {D, N}
 
     if obsdim == D
         return data
     else
+        # Swap around the obsdim with the dimension we want to assign it to
         perm = ntuple(N) do ii
             if ii == D
                 return obsdim
@@ -145,16 +140,17 @@ function organise_obs(
     end
 end
 
-
-_default_obsdim(x) = 1  # for iterators
-_default_obsdim(::AbstractArray) = 1  # Talk to Eric P. if you disagree
+# Assign rows as observations by default
+_default_obsdim(x) = 1
 function _default_obsdim(x::NamedDimsArray{L}) where L
     obsnames = (:obs, :observations, :samples)
+
+    # These obsnames specify the order of preference when returning your observation dimension
+    # e.g. if :obs and :samples both exist in your NamedDimsArray then :obs is always returned
     used = findfirst(in(L), obsnames)
     if used === nothing
         throw(DimensionMismatch(string(
-            "No observation dimension found. Provided dimension names = $L, ",
-            "valid observation dimension names = $obsnames"
+            "No observation dimension found. Provide one of the valid dimension names = $L."
         )))
     end
     return @inbounds obsnames[used]
