@@ -25,14 +25,26 @@ const MatrixColsOfObs = ArraySlicesOfObs{2}
 
 
 """
-    organise_obs(f, data; obsdim=nothing)
+    obs_arrangement(f::Function) -> ObsArrangement
 
-Organise the `data` according to the `ObsArrangement` expected by some function `f`.
+Specify the observation arrangement trait of a function `f`.
+"""
+function obs_arrangement end
+
+"""
+    organise_obs(f, data; obsdim=nothing)
+    organise_obs(::ObsArrangement, data; obsdim=nothing)
+
+Organise the `data` according to the `ObsArrangement` expected by `f`.
+
+# Arguments
+- `f`: the function or method needing the data in a certain orientation
+- `data`: the data to transform
+- `obsdim`: the dimension of the observations
 """
 function organise_obs(f, data; obsdim=nothing)
     return organise_obs(obs_arrangement(f), data; obsdim=obsdim)
 end
-
 
 # Specify arrangement based on type of data:
 

@@ -30,6 +30,17 @@ using Test
 
     end
 
+    @testset "obs_arrangement" begin
+
+        foo(x) = x
+
+        for a in (SingleObs(), IteratorOfObs(), MatrixRowsOfObs(), MatrixColsOfObs())
+            obs_arrangement(::typeof(foo)) = a  # specify the ObsArrangement
+            @test obs_arrangement(foo) == a
+        end
+
+    end
+
     @testset "organise_obs" begin
       c_organise_obs(args...; kwargs...) = collect(organise_obs(args...; kwargs...))
 
