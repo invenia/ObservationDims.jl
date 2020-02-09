@@ -1,8 +1,9 @@
 module ObservationDims
 
-using NamedDims
 using AxisArrays
+using Compat
 using Distributions
+using NamedDims
 
 export obs_arrangement, organise_obs
 export SingleObs, IteratorOfObs, ArraySlicesofObs
@@ -82,15 +83,6 @@ end
 # Any -> SingleObs: never any need to rearrage
 organise_obs(::SingleObs, data; obsdim=nothing) = data
 
-# If data is an array we can safely drop single length dimensions
-# This lets us compute metrics on pairs of objects that are (3,) and (3, 1)
-function organise_obs(::SingleObs, data::AbstractArray; obsdim=nothing)
-    to_drop = findall(size(data) .== 1)
-    data = isempty(to_drop) ? data : dropdims(data; dims=Tuple(to_drop))
-    return data
-end
-
-
 # Array -> IteratorOfObs or ArraySlicesOfObs: depends on obsdim
 # Resorts to default obsdim which redispatches to the 3 arg form below.
 for A in (IteratorOfObs, ArraySlicesOfObs)
@@ -114,8 +106,7 @@ end
 
 # Slice up the array to get an iterator of observations
 function organise_obs(::IteratorOfObs, data::AbstractArray, obsdim::Integer)
-    # This is basically eachslice from julia 1.1+
-    return (selectdim(data, obsdim, ii) for ii in Base.axes(data, obsdim))
+    return eachslice(data, dims=obsdim)
 end
 
 # Permute the array so the observations are arranged correctly
