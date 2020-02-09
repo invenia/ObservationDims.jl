@@ -42,7 +42,7 @@ Organise the `data` according to the `ObsArrangement` expected by `f`.
 - `data`: the data to transform
 - `obsdim`: the dimension of the observations
 """
-function organise_obs(f, data; obsdim=nothing)
+function organise_obs(f, data; obsdim=_default_obsdim(data))
     return organise_obs(obs_arrangement(f), data; obsdim=obsdim)
 end
 
@@ -50,8 +50,9 @@ end
 
 # Scalars have no "orientation" so no rearrangement required
 for T in (Sampleable, Number, Symbol)
-    @eval organise_obs(f, data::$T; obsdim=nothing) = data
     @eval organise_obs(::SingleObs, data::$T; obsdim=nothing) = data
+    @eval organise_obs(::IteratorOfObs, data::$T; obsdim=nothing) = data
+    @eval organise_obs(::ArraySlicesOfObs, data::$T; obsdim=nothing) = data
 end
 
 ## Vectors: obsdim is optional, we may or may not need it.
