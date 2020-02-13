@@ -31,9 +31,19 @@ using Test
     end
 
     @testset "organise_obs" begin
+
         c_organise_obs(args...; kwargs...) = collect(organise_obs(args...; kwargs...))
 
-        @testset "SingleObs" begin
+        @testset "Simple Scalars" begin
+            for (raw, arrange) in zip(
+                (Normal(), 2, :test),
+                (IteratorOfObs(), MatrixRowsOfObs(), MatrixColsOfObs())
+            )
+                @test raw == organise_obs(arrange, raw)
+            end
+        end
+
+        @testset "Simple SingleObs" begin
 
             data = (
                 1.2,
@@ -49,10 +59,10 @@ using Test
 
         end
 
-        @testset "simple IteratorOfObs for iterators" begin
+        @testset "Simple IteratorOfObs for Iterators" begin
             for out in (
-                [1,2,3],
-                [[1,2,3], [4,5,6]],
+                [1, 2, 3],
+                [[1, 2, 3], [4, 5, 6]],
                 [[1 2 3; 10 20 30], [4 5 6; 40 50 60]],
             )
                 for transform in (identity, Tuple, x->Base.Generator(identity, x))
@@ -62,7 +72,15 @@ using Test
             end
         end
 
-        @testset "iterators to $Arrange" for (Arrange, out) in (
+        @testset "Simple IteratorOfObs for Vectors" begin
+            raw = [1, 2, 3]
+            @test raw == c_organise_obs(IteratorOfObs(), raw)
+
+            raw = 1:10
+            @test collect(raw) == c_organise_obs(IteratorOfObs(), raw)
+        end
+
+        @testset "Iterators to $Arrange" for (Arrange, out) in (
             (MatrixRowsOfObs(),  [10 20 30; 40 50 60]),
             (MatrixColsOfObs(), [10 40; 20 50; 30 60]),
         )
@@ -75,7 +93,7 @@ using Test
         end
 
 
-        @testset "matrix to $Arrange" for (Arrange, out) in (
+        @testset "Matrices to $Arrange" for (Arrange, out) in (
             (IteratorOfObs(), [[1,2,3],[4,5,6]]),
             (MatrixRowsOfObs(), [1 2 3; 4 5 6]),
             (MatrixColsOfObs(), [1 4; 2 5; 3 6]),
@@ -99,6 +117,24 @@ using Test
             @test out == c_organise_obs(Arrange, A; obsdim=:y)
 
         end
+
+        @testset "ArraySlicesOfObs" begin
+            raw = rand(4, 5, 6)
+
+            # obsdim = 1 is default so raw data is already in arranged as expected: (1, 2, 3)
+            @test organise_obs(ArraySlicesOfObs{1}(), raw) == raw
+            @test organise_obs(ArraySlicesOfObs{1}(), raw) == organise_obs(MatrixRowsOfObs(), raw)
+
+            # obsdim = 2 transposes each sub-matrix along dims 1 and 2: (2, 1, 3)
+            @test organise_obs(ArraySlicesOfObs{2}(), raw) == organise_obs(MatrixColsOfObs(), raw)
+
+            # obsdim = 3 transposes each sub-matrix along dims 1 and 3: (3, 2, 1)
+            reorg_data = organise_obs(ArraySlicesOfObs{3}(), raw)
+            @test reorg_data[1, :, :] == permutedims(raw[:, :, 1])
+            @test reorg_data[:, 1, :] == permutedims(raw[:, 1, :])  # dim 2 is just transposed
+            @test reorg_data[:, :, 1] == permutedims(raw[1, :, :])
+        end
+
     end
 
     @testset "obs_arrangement $a" for a in (

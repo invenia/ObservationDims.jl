@@ -6,7 +6,7 @@ using Distributions
 using NamedDims
 
 export obs_arrangement, organise_obs
-export SingleObs, IteratorOfObs, ArraySlicesofObs
+export SingleObs, IteratorOfObs, ArraySlicesOfObs
 export MatrixRowsOfObs, MatrixColsOfObs
 
 """
@@ -25,7 +25,7 @@ const MatrixColsOfObs = ArraySlicesOfObs{2}
 
 
 """
-    obs_arrangement(f::Function) -> ObsArrangement
+    obs_arrangement(f::Type{<:Function}) -> ObsArrangement
 
 Specify the observation arrangement trait of a function `f`.
 """
