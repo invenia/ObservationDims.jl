@@ -142,7 +142,6 @@ version = "0.2.16"
 deps = ["AxisArrays", "Compat", "Distributions", "LinearAlgebra", "NamedDims", "Random"]
 path = ".."
 uuid = "bd245535-7a0d-4808-be35-e2fe847ca032"
-version = "0.1.0"
 
 [[OpenBLAS_jll]]
 deps = ["Libdl", "Pkg"]
