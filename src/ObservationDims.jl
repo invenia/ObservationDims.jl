@@ -16,11 +16,38 @@ Defines the orientation of data that is expected by a function
 """
 abstract type ObsArrangement end
 
+"""
+    SingleObs <: ObsArrangement
+
+The data consists of a single observation regardless of dimension.
+"""
 struct SingleObs <: ObsArrangement end
+
+"""
+    IteratorOfObs <: ObsArrangement
+
+The data consists of an iterator over multiple observations.
+"""
 struct IteratorOfObs <: ObsArrangement end
+
+"""
+    ArraySlicesOfObs{D} <: ObsArrangement
+
+The data consists of a multi-dimensional array where the observations are along dimension `D`.
+"""
 struct ArraySlicesOfObs{D} <: ObsArrangement end
 
+"""
+    MatrixRowsOfObs <: ObsArrangement
+
+A special case of `ArraySlicesOfObs` where the observations are along the first dimension.
+"""
 const MatrixRowsOfObs = ArraySlicesOfObs{1}
+
+"""
+    MatrixColsOfObs <: ObsArrangement
+A special case of `ArraySlicesOfObs` where the observations are along the second dimension.
+"""
 const MatrixColsOfObs = ArraySlicesOfObs{2}
 
 
