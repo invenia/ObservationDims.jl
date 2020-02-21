@@ -33,7 +33,7 @@ using Test
 
     @testset "organise_obs" begin
 
-        corganise_obs(args...; kwargs...) = collect(organise_obs(args...; kwargs...))
+        c_organise_obs(args...; kwargs...) = collect(organise_obs(args...; kwargs...))
 
         @testset "Simple Scalars" begin
             for (raw, arrange) in zip(
@@ -68,17 +68,17 @@ using Test
             )
                 for transform in (identity, Tuple, x->Base.Generator(identity, x))
                     raw = transform(out)
-                    @test out == corganise_obs(IteratorOfObs(), raw)
+                    @test out == c_organise_obs(IteratorOfObs(), raw)
                 end
             end
         end
 
         @testset "Simple IteratorOfObs for Vectors" begin
             raw = [1, 2, 3]
-            @test raw == corganise_obs(IteratorOfObs(), raw)
+            @test raw == c_organise_obs(IteratorOfObs(), raw)
 
             raw = 1:10
-            @test collect(raw) == corganise_obs(IteratorOfObs(), raw)
+            @test collect(raw) == c_organise_obs(IteratorOfObs(), raw)
         end
 
         @testset "Iterators to $Arrange" for (Arrange, out) in (
@@ -89,7 +89,7 @@ using Test
 
             for transform in (identity, Tuple, x->Base.Generator(identity, x))
                 data_iter = transform(raw)
-                @test out == corganise_obs(Arrange, data_iter)
+                @test out == c_organise_obs(Arrange, data_iter)
             end
         end
 
@@ -100,22 +100,22 @@ using Test
             (MatrixColsOfObs(), [1 4; 2 5; 3 6]),
         )
             raw = [1 2 3; 4 5 6]
-            @test out == corganise_obs(Arrange, raw)  # default is rows
-            @test out == corganise_obs(Arrange, raw; obsdim=1)
-            @test out == corganise_obs(Arrange, raw'; obsdim=2)
-            @test out == corganise_obs(Arrange, NamedDimsArray{(:obs, :var)}(raw))
-            @test out == corganise_obs(Arrange, NamedDimsArray{(:var, :obs)}(raw'))
-            @test out == corganise_obs(Arrange, NamedDimsArray{(:x, :y)}(raw'); obsdim=:y)
-            @test out == corganise_obs(Arrange, NamedDimsArray{(:x, :y)}(raw); obsdim=:x)
+            @test out == c_organise_obs(Arrange, raw)  # default is rows
+            @test out == c_organise_obs(Arrange, raw; obsdim=1)
+            @test out == c_organise_obs(Arrange, raw'; obsdim=2)
+            @test out == c_organise_obs(Arrange, NamedDimsArray{(:obs, :var)}(raw))
+            @test out == c_organise_obs(Arrange, NamedDimsArray{(:var, :obs)}(raw'))
+            @test out == c_organise_obs(Arrange, NamedDimsArray{(:x, :y)}(raw'); obsdim=:y)
+            @test out == c_organise_obs(Arrange, NamedDimsArray{(:x, :y)}(raw); obsdim=:x)
 
             A = AxisArray(raw, Axis{:y}([:t1, :t2]), Axis{:x}([:o1, :o2, :o3]))
-            @test out == corganise_obs(Arrange, A)
-            @test out == corganise_obs(Arrange, A; obsdim=1)
-            @test out == corganise_obs(Arrange, A; obsdim=:y)
+            @test out == c_organise_obs(Arrange, A)
+            @test out == c_organise_obs(Arrange, A; obsdim=1)
+            @test out == c_organise_obs(Arrange, A; obsdim=:y)
 
             A = AxisArray(raw', Axis{:x}([:o1, :o2, :o3]), Axis{:y}([:t1, :t2]))
-            @test out == corganise_obs(Arrange, A; obsdim=2)
-            @test out == corganise_obs(Arrange, A; obsdim=:y)
+            @test out == c_organise_obs(Arrange, A; obsdim=2)
+            @test out == c_organise_obs(Arrange, A; obsdim=:y)
 
         end
 
