@@ -54,13 +54,17 @@ When used with `NamedDimsArray`s and `AxisArray`s, the `obsdim` can also be a sy
 For `NamedDimsArray`s, the default `obsdim` is selected from `(:obs, :observations, :samples)` in order of preference.
 For example, `:obs` will always be selected if present, else `:observations` will selected if present, else `:samples` will be selected.
 If none of these are present you will be required to explicitly provide the `obsdim` yourself.
-This does not apply to `AxisArray`s, which default to `obsdim=1`.
+This does not apply to `AxisArray`s, which like `AbstractArray` in general, default to `obsdim=1`.
 
 ```julia
 # no fields are named :obs, :observations, or :samples
 arrange_obs(MatrixRowsOfObs(), named_dims; obsdim=:time)
 ```
 
+### Tables
+[Tables.jl](https://github.com/JuliaData/Tables.jl) tables, such as [DataFrames](https://github.com/JuliaData/DataFrames.jl/), are supported as an input.
+The observations for a table are always the rows, i.e. `obsdim=1` (warning will be given if you specify otherwise).
+The table will be converted into a matrix or iterator of vectors as appropriate.
 
 ## Method Traits
 
