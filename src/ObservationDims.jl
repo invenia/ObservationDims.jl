@@ -141,7 +141,7 @@ end
 # Any -> SingleObs: never any need to rearrage
 organise_obs(::SingleObs, data; obsdim=nothing) = data
 
-# Tabhles support
+# Tables support
 function organise_obs(arrangement::IteratorOfObs, holder::_TableHolder; obsdim=1)
     _warn_about_table_obsdim(obsdim)
     data = holder.data
