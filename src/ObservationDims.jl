@@ -69,15 +69,15 @@ struct _TableHolder{T}
     data::T
 end
 """
-    organise_obs(f, data; obsdim=nothing)
-    organise_obs(::ObsArrangement, data; obsdim=nothing)
+    organise_obs(f, data; obsdim=_default_obsdim(data))
+    organise_obs(::ObsArrangement, data; obsdim=_default_obsdim(data))
 
 Organise the `data` according to the `ObsArrangement` expected by `f`.
 
 # Arguments
 - `f`: the function or method needing the data in a certain orientation
 - `data`: the data to transform
-- `obsdim`: the dimension of the observations
+- `obsdim`: the dimension of the observations, resorts to `_default_obsdim` when not specified.
 """
 function organise_obs(f, data; obsdim=_default_obsdim(data))
     return organise_obs(obs_arrangement(f), data; obsdim=obsdim)
@@ -184,6 +184,16 @@ end
 # Slice up the array to get an iterator of observations
 function organise_obs(::IteratorOfObs, data::AbstractArray, obsdim::Integer)
     return eachslice(data, dims=obsdim)
+end
+
+
+# If default obsdim is nothing we should gracefully dispatch on the default
+function organise_obs(arrangement::IteratorOfObs, data, ::Nothing)
+    return organise_obs(arrangement, data, _default_obsdim(data))
+end
+
+function organise_obs(arrangement::ArraySlicesOfObs, data, ::Nothing)
+    return organise_obs(arrangement, data, _default_obsdim(data))
 end
 
 # Permute the array so the observations are arranged correctly
