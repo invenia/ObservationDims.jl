@@ -154,6 +154,9 @@ using Test
 
         @test organise_obs(foo, raw) == organise_obs(a, raw)
 
+        # make sure it handles nothing gracefully
+        @test organise_obs(foo, raw; obsdim=nothing) == organise_obs(a, raw)
+
     end
 
     @testset "Tables.jl support" begin
