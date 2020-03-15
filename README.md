@@ -4,6 +4,8 @@
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/invenia/ObservationDims.jl?svg=true)](https://ci.appveyor.com/project/invenia/ObservationDims-jl)
 [![Codecov](https://codecov.io/gh/invenia/ObservationDims.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/invenia/ObservationDims.jl)
 
+[![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
+
 # What are ObservationDims?
 
 This package defines useful traits and methods for organising data into the format required by some API.
