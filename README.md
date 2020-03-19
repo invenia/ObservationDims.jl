@@ -1,10 +1,10 @@
 # ObservationDims
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://invenia.github.io/ObservationDims.jl/stable)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://invenia.github.io/ObservationDims.jl/dev)
 [![Build Status](https://travis-ci.com/invenia/ObservationDims.jl.svg?branch=master)](https://travis-ci.com/invenia/ObservationDims.jl)
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/invenia/ObservationDims.jl?svg=true)](https://ci.appveyor.com/project/invenia/ObservationDims-jl)
 [![Codecov](https://codecov.io/gh/invenia/ObservationDims.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/invenia/ObservationDims.jl)
+
+[![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
 
 # What are ObservationDims?
 
@@ -17,16 +17,16 @@ The model may require that observations correspond to matrix rows, or perhaps th
 Another model might treat the matrix itself as a single observation.
 
 We want to make sure each model parses the data in the correct format.
-For this, we can use `arrange_obs` to reorganise the data (when necessary) into the required `ObsArrangement`.
+For this, we can use `organise_obs` to reorganise the data (when necessary) into the required `ObsArrangement`.
 
 ```julia
 using ObservationDims
 
 # treat whole matrix as one observation
-arrange_obs(SingleObs(), data)
+organise_obs(SingleObs(), data)
 
 # rearrange matrix such that observations are columns and rows are features
-arrange_obs(MatrixColsOfObs(), data)
+organise_obs(MatrixColsOfObs(), data)
 ```
 
 By default, observations are assumed to belong to the first dimension (i.e. rows).
@@ -34,7 +34,7 @@ This can be over-written using the `obsdim` keyword argument:
 
 ```julia
 # rearrange into a vector of observations where observations are along the 2nd dimension (cols)
-arrange_obs(IteratorOfObs(), data; obsdim=2)
+organise_obs(IteratorOfObs(), data; obsdim=2)
 ```
 
 ### N-Dimensional data
@@ -44,7 +44,7 @@ The `MatrixRowsOfObs` and `MatrixColsOfObs` are special cases of the more genera
 For example, if we have a 4-dimensional `Array` with the observations along the 1st dimension but we require them along the 4th dimension we can permute the 1st and 4th dimensions, e.g. `(1, 2, 3, 4) -> (4, 2, 3, 1)`, as follows:
 
 ```julia
-arrange_obs(ArraySlicesOfObs{4}(), data; obsdim=1)
+organise_obs(ArraySlicesOfObs{4}(), data; obsdim=1)
 ```
 
 ### NamedDimsArrays and AxisArrays
@@ -58,7 +58,7 @@ This does not apply to `AxisArray`s, which like `AbstractArray` in general, defa
 
 ```julia
 # no fields are named :obs, :observations, or :samples
-arrange_obs(MatrixRowsOfObs(), named_dims; obsdim=:time)
+organise_obs(MatrixRowsOfObs(), named_dims; obsdim=:time)
 ```
 
 ### Tables
@@ -79,12 +79,12 @@ obs_arrangement(::typeof(model1)) = MatrixRowsOfObs
 obs_arrangement(::typeof(model2)) = IteratorOfObs
 ```
 
-Now `arrange_obs` can take the model as an argument which will then dispatch on the trait and organise the data accordingly:
+Now `organise_obs` can take the model as an argument which will then dispatch on the trait and organise the data accordingly:
 
 ```julia
 # rearranges data to use rows as observations
-model1_data = arrange_obs(model1, data)
+model1_data = organise_obs(model1, data)
 
 # rearranges data as an iterator of observations
-model2_data = arrange_obs(model2, data)
+model2_data = organise_obs(model2, data)
 ```
