@@ -1,6 +1,7 @@
 using ObservationDims
 using AxisArrays
 using Distributions
+using DataFrames
 using LinearAlgebra
 using NamedDims
 using Random
@@ -153,6 +154,26 @@ using Test
 
         @test organise_obs(foo, raw) == organise_obs(a, raw)
 
+        # make sure it handles nothing gracefully
+        @test organise_obs(foo, raw; obsdim=nothing) == organise_obs(a, raw)
+
     end
 
+    @testset "Tables.jl support" begin
+        nt_table = [(a=1, b=2, c=3), (a=10, b=20, c=30)]  # basic row table
+        df = DataFrame(nt_table)  # advanced column table
+
+        @testset "$(typeof(table))" for table in (df, nt_table)
+            @test collect(organise_obs(IteratorOfObs(), table)) == [[1, 2, 3], [10, 20, 30]]
+            @test organise_obs(MatrixRowsOfObs(), table) == [1 2 3; 10 20 30]
+            @test organise_obs(MatrixColsOfObs(), table) == [1 10; 2 20; 3 30]
+
+            for arrangement in (MatrixColsOfObs(), MatrixRowsOfObs(), IteratorOfObs())
+                @test_logs(
+                    (:warn, r"obsdim not equal to 1"),
+                    organise_obs(arrangement, table; obsdim=20)
+                )
+            end
+        end
+    end
 end

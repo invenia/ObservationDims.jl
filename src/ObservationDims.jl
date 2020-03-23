@@ -4,6 +4,7 @@ using AxisArrays
 using Compat
 using Distributions
 using NamedDims
+using Tables
 
 export obs_arrangement, organise_obs
 export SingleObs, IteratorOfObs, ArraySlicesOfObs
@@ -59,19 +60,29 @@ Specify the observation arrangement trait of a function `f`.
 function obs_arrangement end
 
 """
-    organise_obs(f, data; obsdim=nothing)
-    organise_obs(::ObsArrangement, data; obsdim=nothing)
+    _TableHolder
+
+A internal wrapper type for dispatch purposes.
+Since tables do not have a type, wrap them in this so we can dispatch on them.
+"""
+struct _TableHolder{T}
+    data::T
+end
+"""
+    organise_obs(f, data; obsdim=_default_obsdim(data))
+    organise_obs(::ObsArrangement, data; obsdim=_default_obsdim(data))
 
 Organise the `data` according to the `ObsArrangement` expected by `f`.
 
 # Arguments
 - `f`: the function or method needing the data in a certain orientation
 - `data`: the data to transform
-- `obsdim`: the dimension of the observations
+- `obsdim`: the dimension of the observations, resorts to `_default_obsdim` when not specified.
 """
 function organise_obs(f, data; obsdim=_default_obsdim(data))
     return organise_obs(obs_arrangement(f), data; obsdim=obsdim)
 end
+
 
 # Specify arrangement based on type of data:
 
@@ -84,13 +95,20 @@ end
 
 ## Vectors: obsdim is optional, we may or may not need it.
 for T in (Any, AbstractVector)
-
     # Iterator -> IteratorOfObs
-    @eval organise_obs(::IteratorOfObs, obs_iter::$T; obsdim=nothing) = obs_iter
+    @eval function organise_obs(::IteratorOfObs, obs_iter::$T; obsdim=nothing)
+        if Tables.istable(obs_iter)
+            return organise_obs(IteratorOfObs(), _TableHolder(obs_iter); obsdim=obsdim)
+        else
+            return obs_iter
+        end
+    end
 
     # Iterator -> ArraySlicesOfObs
     @eval function organise_obs(::ArraySlicesOfObs{D}, obs_iter::$T; obsdim=nothing) where D
-
+        if Tables.istable(obs_iter)
+            return organise_obs(ArraySlicesOfObs{D}(), _TableHolder(obs_iter); obsdim=obsdim)
+        end
         # we assume all obs have same number of dimensions else nothing makes sense
         ndims_per_obs = ndims(first(obs_iter))
 
@@ -123,6 +141,25 @@ end
 # Any -> SingleObs: never any need to rearrage
 organise_obs(::SingleObs, data; obsdim=nothing) = data
 
+# Tables support
+function organise_obs(arrangement::IteratorOfObs, holder::_TableHolder; obsdim=1)
+    _warn_about_table_obsdim(obsdim)
+    data = holder.data
+    return (collect(obs) for obs in Tables.rows(data))
+end
+
+function organise_obs(arrangement::ArraySlicesOfObs, holder::_TableHolder; obsdim=1)
+    _warn_about_table_obsdim(obsdim)
+    data = Tables.matrix(holder.data)
+    return organise_obs(arrangement, data; obsdim=1)
+end
+
+function _warn_about_table_obsdim(obsdim)
+    if obsdim !== 1 && obsdim !== nothing
+        @warn "Arraying a Table, obsdim not equal to 1 ignored" obsdim
+    end
+end
+
 # Array -> IteratorOfObs or ArraySlicesOfObs: depends on obsdim
 # Resorts to default obsdim which redispatches to the 3 arg form below.
 for A in (IteratorOfObs, ArraySlicesOfObs)
@@ -147,6 +184,16 @@ end
 # Slice up the array to get an iterator of observations
 function organise_obs(::IteratorOfObs, data::AbstractArray, obsdim::Integer)
     return eachslice(data, dims=obsdim)
+end
+
+
+# If default obsdim is nothing we should gracefully dispatch on the default
+function organise_obs(arrangement::IteratorOfObs, data, ::Nothing)
+    return organise_obs(arrangement, data, _default_obsdim(data))
+end
+
+function organise_obs(arrangement::ArraySlicesOfObs, data, ::Nothing)
+    return organise_obs(arrangement, data, _default_obsdim(data))
 end
 
 # Permute the array so the observations are arranged correctly
