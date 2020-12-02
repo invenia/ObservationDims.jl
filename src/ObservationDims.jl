@@ -1,7 +1,7 @@
 module ObservationDims
 
 using AxisArrays
-using Compat
+using Compat: eachslice
 using Distributions
 using NamedDims
 using Tables
