@@ -1,7 +1,6 @@
 # ObservationDims
 
-[![Build Status](https://travis-ci.com/invenia/ObservationDims.jl.svg?branch=master)](https://travis-ci.com/invenia/ObservationDims.jl)
-[![Build Status](https://ci.appveyor.com/api/projects/status/github/invenia/ObservationDims.jl?svg=true)](https://ci.appveyor.com/project/invenia/ObservationDims-jl)
+[![CI](https://github.com/Invenia/ObservationDims.jl/workflows/CI/badge.svg)](https://github.com/Invenia/ObservationDims.jl/actions?query=workflow%3ACI)
 [![Codecov](https://codecov.io/gh/invenia/ObservationDims.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/invenia/ObservationDims.jl)
 
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
