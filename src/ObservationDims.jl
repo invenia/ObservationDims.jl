@@ -1,6 +1,5 @@
 module ObservationDims
 
-using AxisArrays
 using Compat: eachslice
 using Distributions
 using NamedDims
@@ -165,16 +164,14 @@ end
 for A in (IteratorOfObs, ArraySlicesOfObs)
 
     @eval function organise_obs(arrangement::$A, data::AbstractArray; obsdim=_default_obsdim(data))
+        if obsdim isa Symbol && hasproperty(data, :axes)
+            obsdim = findfirst(x -> in(obsdim, typeof(x).parameters), data.axes)
+        end
         return organise_obs(arrangement, data, obsdim)
     end
 
     @eval function organise_obs(arrangement::$A, data::NamedDimsArray; obsdim=_default_obsdim(data))
         obsdim = (obsdim isa Symbol) ? NamedDims.dim(data, obsdim) : obsdim
-        return organise_obs(arrangement, data, obsdim)
-    end
-
-    @eval function organise_obs(arrangement::$A, data::AxisArray; obsdim=_default_obsdim(data))
-        obsdim = (obsdim isa Symbol) ? axisdim(data, Axis{obsdim}) : obsdim
         return organise_obs(arrangement, data, obsdim)
     end
 end
