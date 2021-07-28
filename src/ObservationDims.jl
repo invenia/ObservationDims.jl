@@ -164,7 +164,7 @@ end
 for A in (IteratorOfObs, ArraySlicesOfObs)
 
     @eval function organise_obs(arrangement::$A, data::AbstractArray; obsdim=_default_obsdim(data))
-        if obsdim isa Symbol && hasproperty(data, :axes)
+        if obsdim isa Symbol && hasproperty(data, :axes)  # support AxisArrays via structural ducktyping
             obsdim = findfirst(x -> in(obsdim, typeof(x).parameters), data.axes)
         end
         return organise_obs(arrangement, data, obsdim)
