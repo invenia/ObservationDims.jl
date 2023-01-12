@@ -1,6 +1,5 @@
 module ObservationDims
 
-using Compat: eachslice, hasproperty
 using Distributions
 using NamedDims
 using Tables
